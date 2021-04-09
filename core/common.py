@@ -18,7 +18,7 @@ def convolutional(input_data, filters_shape, trainable, name, downsample=False, 
 
     with tf.variable_scope(name):
         if downsample:
-            pad_h, pad_w = (filters_shape[0] - 2) // 2 + 1, (filters_shape[1] - 2) // 2 + 1
+            pad_h, pad_w = (filters_shape[0] - 2) // 2 + 1, (filters_shape[1] - 2) // 2 + 1 ## = (k-1) / 2
             paddings = tf.constant([[0, 0], [pad_h, pad_h], [pad_w, pad_w], [0, 0]])
             input_data = tf.pad(input_data, paddings, 'CONSTANT')
             strides = (1, 2, 2, 1)
@@ -35,7 +35,7 @@ def convolutional(input_data, filters_shape, trainable, name, downsample=False, 
             conv = tf.layers.batch_normalization(conv, beta_initializer=tf.zeros_initializer(),
                                                  gamma_initializer=tf.ones_initializer(),
                                                  moving_mean_initializer=tf.zeros_initializer(),
-                                                 moving_variance_initializer=tf.ones_initializer(), training=trainable)
+                                                 moving_variance_initializer=tf.ones_initializer(), training=trainable)  ## 这几个初始化都是函数默认的值
         else:
             bias = tf.get_variable(name='bias', shape=filters_shape[-1], trainable=True,
                                    dtype=tf.float32, initializer=tf.constant_initializer(0.0))
