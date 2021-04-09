@@ -92,7 +92,7 @@ class YOLOV3(object):
         conv_sbbox = common.convolutional(conv_sobj_branch, (1, 1, 256, 3*(self.num_class + 5)),
                                           trainable=self.trainable, name='conv_sbbox', activate=False, bn=False)
 
-        return conv_lbbox, conv_mbbox, conv_sbbox
+        return conv_lbbox, conv_mbbox, conv_sbbox ## 1/32  1/16  1/8
 
     def decode(self, conv_output, anchors, stride):
         """
@@ -105,6 +105,7 @@ class YOLOV3(object):
         output_size      = conv_shape[1]
         anchor_per_scale = len(anchors)
 
+        ## [b,n,n,3x(5 + self.num_class)] -->  [b,n,n,3,(5 + self.num_class)]
         conv_output = tf.reshape(conv_output, (batch_size, output_size, output_size, anchor_per_scale, 5 + self.num_class))
 
         conv_raw_dxdy = conv_output[:, :, :, :, 0:2]
