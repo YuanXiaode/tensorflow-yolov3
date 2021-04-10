@@ -105,7 +105,8 @@ class YOLOV3(object):
         output_size      = conv_shape[1]
         anchor_per_scale = len(anchors)
 
-        ## [b,n,n,3x(5 + self.num_class)] -->  [b,n,n,3,(5 + self.num_class)]
+        ## [b,n,n,3x(5 + self.num_class)] -->  [b,n,n,3,(5 + self.num_class)]  step!
+
         conv_output = tf.reshape(conv_output, (batch_size, output_size, output_size, anchor_per_scale, 5 + self.num_class))
 
         conv_raw_dxdy = conv_output[:, :, :, :, 0:2]
