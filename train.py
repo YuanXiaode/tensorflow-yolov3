@@ -66,7 +66,9 @@ class YoloTrain(object):
             warmup_steps = tf.constant(self.warmup_periods * self.steps_per_period,
                                         dtype=tf.float64, name='warmup_steps')
             train_steps = tf.constant( (self.first_stage_epochs + self.second_stage_epochs)* self.steps_per_period,
-                                        dtype=tf.float64, name='train_steps')
+
+                                 dtype=tf.float64, name='train_steps')
+            ## warmup + 余弦退火
             self.learn_rate = tf.cond(
                 pred=self.global_step < warmup_steps,
                 true_fn=lambda: self.global_step / warmup_steps * self.learn_rate_init,
