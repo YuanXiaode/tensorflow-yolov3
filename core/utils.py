@@ -205,7 +205,7 @@ def postprocess_boxes(pred_bbox, org_img_shape, input_size, score_threshold):
     mask = np.logical_and(scale_mask, score_mask)
     coors, scores, classes = pred_coor[mask], scores[mask], classes[mask]
 
-    return np.concatenate([coors, coors[:, np.newaxis], classes[:, np.newaxis]], axis=-1)  ## coors 是比 coors 和 classes多一个维度
+    return np.concatenate([coors, scores[:, np.newaxis], classes[:, np.newaxis]], axis=-1)  ## coors 是比 coors 和 classes多一个维度
 
 
 
