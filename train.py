@@ -142,6 +142,8 @@ class YoloTrain(object):
             train_epoch_loss, test_epoch_loss = [], []
 
             for train_data in pbar:
+                # print(train_data[1].shape)
+                # print(train_data[4].shape)
                 _, summary, train_step_loss, global_step_val = self.sess.run(
                     [train_op, self.write_op, self.loss, self.global_step],feed_dict={
                                                 self.input_data:   train_data[0],
