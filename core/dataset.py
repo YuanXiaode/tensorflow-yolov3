@@ -144,7 +144,7 @@ class Dataset(object):
             ty = random.uniform(-(max_u_trans - 1), (max_d_trans - 1))
 
             M = np.array([[1, 0, tx], [0, 1, ty]])
-            image = cv2.warpAffine(image, M, (w, h))
+            image = cv2.warpAffine(image, M, (w, h))  ## 仿射变换，tx,ty,表示图像平移，不足的地方用黑边补足
 
             bboxes[:, [0, 2]] = bboxes[:, [0, 2]] + tx
             bboxes[:, [1, 3]] = bboxes[:, [1, 3]] + ty
@@ -167,6 +167,7 @@ class Dataset(object):
             image, bboxes = self.random_crop(np.copy(image), np.copy(bboxes))
             image, bboxes = self.random_translate(np.copy(image), np.copy(bboxes))
 
+        ## letterbox ，且化成float32
         image, bboxes = utils.image_preporcess(np.copy(image), [self.train_input_size, self.train_input_size], np.copy(bboxes))
         
         updated_bb = []
@@ -211,7 +212,7 @@ class Dataset(object):
         # added 1e-6 in denominator to avoid generation of inf, which may cause nan loss
 
 
-    def preprocess_true_boxes(self, bboxes):
+    def preprocess_true_boxes(self, bboxes):  ##:boxes in a image: [x1, y1, x2, y2, cls_label]...
 
         label = [np.zeros((self.train_output_sizes[i], self.train_output_sizes[i], self.anchor_per_scale,
                            5 + self.num_classes)) for i in range(3)]
@@ -226,21 +227,26 @@ class Dataset(object):
             onehot[bbox_class_ind] = 1.0
             uniform_distribution = np.full(self.num_classes, 1.0 / self.num_classes)
             deta = 0.01
-            smooth_onehot = onehot * (1 - deta) + deta * uniform_distribution
+            smooth_onehot = onehot * (1 - deta) + deta * uniform_distribution  ## 标签平滑
 
+            ## (x1,y1,x2,y2) -->> (xc,yc,w,h)
             bbox_xywh = np.concatenate([(bbox_coor[2:] + bbox_coor[:2]) * 0.5, bbox_coor[2:] - bbox_coor[:2]], axis=-1)
+            ## 这里用了np的广播机制(沿1维度进行广播计算)，最终结果 shape = (3,4)，将bbox_xywh映射到三个特征图上
             bbox_xywh_scaled = 1.0 * bbox_xywh[np.newaxis, :] / self.strides[:, np.newaxis]
 
             iou = []
             exist_positive = False
-            for i in range(3):
+            for i in range(3): ## i 表示 3 个尺度
+
+                ## anchors_xywh 表示以真实框中点为中心，anchors 中给定的长宽形成的框，shape:(3,4),一个尺度对应三个框
                 anchors_xywh = np.zeros((self.anchor_per_scale, 4))
                 anchors_xywh[:, 0:2] = np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32) + 0.5
                 anchors_xywh[:, 2:4] = self.anchors[i]
 
-                iou_scale = self.bbox_iou(bbox_xywh_scaled[i][np.newaxis, :], anchors_xywh)
+                ## anchors_xywh 和 真实box差别太大的框不要
+                iou_scale = self.bbox_iou(bbox_xywh_scaled[i][np.newaxis, :], anchors_xywh) ## shape:(self.anchor_per_scale)
                 iou.append(iou_scale)
-                iou_mask = iou_scale > 0.3
+                iou_mask = iou_scale > 0.3 ## shape:(self.anchor_per_scale)
 
                 if np.any(iou_mask):
                     xind, yind = np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32)
@@ -251,6 +257,8 @@ class Dataset(object):
                     # But sometimes the coomputation makes it 52 and then it will try to find that location in label array 
                     # which is not present and throws error during training.
 
+                    # label在bbox_xywh_scaled中点处记录如下信息：
+                    # bbox_xywh：真实框box（在输入图像）中的(xc,yc,w,h)，置信度记为1，类别smooth_onehot
                     label[i][yind, xind, iou_mask, :] = 0
                     label[i][yind, xind, iou_mask, 0:4] = bbox_xywh
                     label[i][yind, xind, iou_mask, 4:5] = 1.0
@@ -262,10 +270,10 @@ class Dataset(object):
 
                     exist_positive = True
 
-            if not exist_positive:
+            if not exist_positive:  ## 三个尺度的9个框均不满足 iou_scale > 0.3，找最大iou的形成GT即可
                 best_anchor_ind = np.argmax(np.array(iou).reshape(-1), axis=-1)
-                best_detect = int(best_anchor_ind / self.anchor_per_scale)
-                best_anchor = int(best_anchor_ind % self.anchor_per_scale)
+                best_detect = int(best_anchor_ind / self.anchor_per_scale)   ## 对应尺度
+                best_anchor = int(best_anchor_ind % self.anchor_per_scale)   ## 对应该尺度第几个框
                 xind, yind = np.floor(bbox_xywh_scaled[best_detect, 0:2]).astype(np.int32)
                 xind = np.clip(xind, 0, self.train_output_sizes[i] - 1)     
                 yind = np.clip(yind, 0, self.train_output_sizes[i] - 1)     

@@ -16,7 +16,7 @@ import tensorflow as tf
 from core.yolov3 import YOLOV3
 from core.config import cfg
 parser = argparse.ArgumentParser()
-parser.add_argument("--train_from_coco", action='store_true')
+parser.add_argument("--train_from_coco", action='store_true')  ## 默认false
 flag = parser.parse_args()
 
 org_weights_path = cfg.YOLO.ORIGINAL_WEIGHT
@@ -29,19 +29,19 @@ org_weights_mess = []
 tf.Graph().as_default()
 load = tf.train.import_meta_graph(org_weights_path + '.meta')
 with tf.Session() as sess:
-    load.restore(sess, org_weights_path)
+    load.restore(sess, org_weights_path)  ## 加载图和变量
     for var in tf.global_variables():
         var_name = var.op.name
         var_name_mess = str(var_name).split('/')
         var_shape = var.shape
         if flag.train_from_coco:
             if (var_name_mess[-1] not in ['weights', 'gamma', 'beta', 'moving_mean', 'moving_variance']) or \
-                    (var_name_mess[1] == 'yolo-v3' and (var_name_mess[-2] in preserve_org_names)): continue
+                    (var_name_mess[1] == 'yolo-v3' and (var_name_mess[-2] in preserve_org_names)):continue
         org_weights_mess.append([var_name, var_shape])
         print("=> " + str(var_name).ljust(50), var_shape)
 print()
+print()
 tf.reset_default_graph()
-
 cur_weights_mess = []
 tf.Graph().as_default()
 with tf.name_scope('input'):
@@ -52,9 +52,8 @@ for var in tf.global_variables():
     var_name = var.op.name
     var_name_mess = str(var_name).split('/')
     var_shape = var.shape
-    print(var_name_mess[0])
     if flag.train_from_coco:
-        if var_name_mess[0] in preserve_cur_names: continue
+        if var_name_mess[0] in preserve_cur_names:continue
     cur_weights_mess.append([var_name, var_shape])
     print("=> " + str(var_name).ljust(50), var_shape)
 
@@ -63,7 +62,10 @@ cur_weights_num = len(cur_weights_mess)
 if cur_weights_num != org_weights_num:
     raise RuntimeError
 
+print()
+print()
 print('=> Number of weights that will rename:\t%d' % cur_weights_num)
+## 建立的模型和加载模型名字不匹配，这里就是简单做个映射
 cur_to_org_dict = {}
 for index in range(org_weights_num):
     org_name, org_shape = org_weights_mess[index]

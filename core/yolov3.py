@@ -190,7 +190,10 @@ class YOLOV3(object):
 
         return iou
 
-    ## label: shape (4，76，76，3，25)      bboxes:shape (4,150,4)
+    ##  label.shape ： (batch_size,output_size,output_size,anchor_per_scale,5 + num_classes)
+    ##  bboxes.shape ：(batch_size,max_bbox_per_scale,4), 其中 max_bbox_per_scale = 150
+    ##  bboxes 保存了真实框的坐标信息：(xc,yc,w,h)
+    ##  label 在特征图的对应位置上保存了真实框的坐标信息：(xc,yc,w,h)、置信度1和类别的smooth_onehot，其余地方为零，其中对应位置指真实框在特征图上的映射框的中心点位置
     def loss_layer(self, conv, pred, label, bboxes, anchors, stride):
         conv_shape  = tf.shape(conv)
         batch_size  = conv_shape[0]
@@ -208,15 +211,15 @@ class YOLOV3(object):
         respond_bbox  = label[:, :, :, :, 4:5]
         label_prob    = label[:, :, :, :, 5:]
 
-        ## 计算出的 giou维度为[batch_size,output_size,output_size,3,],少一个维度，需要补上
+        ## self.bbox_giou 结果维度为[batch_size,output_size,output_size,3,],少一个维度，用tf.expand_dims补上
         giou = tf.expand_dims(self.bbox_giou(pred_xywh, label_xywh), axis=-1)
         input_size = tf.cast(input_size, tf.float32)
 
         # 切片特性，用label_xywh[:, :, :, :, 2:3]还是5个维度，若用label_xywh[:, :, :, :, 2]，则只有四个维度了
+        # 框的尺度越小，该值越大，是为了更关注小物体？
         bbox_loss_scale = 2.0 - 1.0 * label_xywh[:, :, :, :, 2:3] * label_xywh[:, :, :, :, 3:4] / (input_size ** 2)
         giou_loss = respond_bbox * bbox_loss_scale * (1- giou)
 
-        # iou计算同样会少一维~所以这里先加一维
         iou = self.bbox_iou(pred_xywh[:, :, :, :, np.newaxis, :], bboxes[:, np.newaxis, np.newaxis, np.newaxis, :, :])
         max_iou = tf.expand_dims(tf.reduce_max(iou, axis=-1), axis=-1)
 

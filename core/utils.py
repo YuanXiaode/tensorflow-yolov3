@@ -35,7 +35,7 @@ def get_anchors(anchors_path):
     anchors = np.array(anchors.split(','), dtype=np.float32)
     return anchors.reshape(3, 3, 2)
 
-
+# 转成float32，letterbox 成target_size x target_size 尺寸
 def image_preporcess(image, target_size, gt_boxes=None):
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
