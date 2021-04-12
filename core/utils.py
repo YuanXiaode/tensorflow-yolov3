@@ -55,7 +55,7 @@ def image_preporcess(image, target_size, gt_boxes=None):
         return image_paded
 
     else:
-        gt_boxes[:, [0, 2]] = gt_boxes[:, [0, 2]] * scale + dw  ## boxes随图下缩放调整坐标
+        gt_boxes[:, [0, 2]] = gt_boxes[:, [0, 2]] * scale + dw  ## 图像缩放并填充后，gt_boxes的坐标也需要同步改动
         gt_boxes[:, [1, 3]] = gt_boxes[:, [1, 3]] * scale + dh
         return image_paded, gt_boxes
 
@@ -96,7 +96,7 @@ def draw_bbox(image, bboxes, classes=read_class_names(cfg.YOLO.CLASSES), show_la
 
 
 
-def bboxes_iou(boxes1, boxes2):
+def bboxes_iou(boxes1, boxes2):   #(num,4) (xl,yl,xr,yr)
 
     boxes1 = np.array(boxes1)
     boxes2 = np.array(boxes2)
