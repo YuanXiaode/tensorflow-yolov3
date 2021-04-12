@@ -190,8 +190,8 @@ class YOLOV3(object):
 
         return iou
 
-    def loss_layer(self, conv, pred, label, bboxes, anchors, stride):  ## 这里要弄清楚bboxes的维度(3,150,4)？
-
+    ## label: shape (4，76，76，3，25)      bboxes:shape (4,150,4)
+    def loss_layer(self, conv, pred, label, bboxes, anchors, stride):
         conv_shape  = tf.shape(conv)
         batch_size  = conv_shape[0]
         output_size = conv_shape[1]
@@ -220,9 +220,9 @@ class YOLOV3(object):
         iou = self.bbox_iou(pred_xywh[:, :, :, :, np.newaxis, :], bboxes[:, np.newaxis, np.newaxis, np.newaxis, :, :])
         max_iou = tf.expand_dims(tf.reduce_max(iou, axis=-1), axis=-1)
 
-        respond_bgd = (1.0 - respond_bbox) * tf.cast( max_iou < self.iou_loss_thresh, tf.float32 )  ## 背景
+        respond_bgd = (1.0 - respond_bbox) * tf.cast( max_iou < self.iou_loss_thresh, tf.float32 )  ## 从非正例中挑出和真实框最大值小于阈值的预测框作为负例
 
-        conf_focal = self.focal(respond_bbox, pred_conf)  ## 解决难例挖掘问题，正例置信度低，负例置信度高，这个值就大
+        conf_focal = self.focal(respond_bbox, pred_conf)  ## 解决难例挖掘问题，正例置信度越低，这个值就越大
 
         conf_loss = conf_focal * (
                 respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=respond_bbox, logits=conv_raw_conf) ## 正例的置信度损失
@@ -230,15 +230,13 @@ class YOLOV3(object):
                 respond_bgd * tf.nn.sigmoid_cross_entropy_with_logits(labels=respond_bbox, logits=conv_raw_conf)  ## 负例的置信度损失
         )
 
-        prob_loss = respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_prob, logits=conv_raw_prob)
+        prob_loss = respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_prob, logits=conv_raw_prob)  ## 正例才计算类别损失
 
         giou_loss = tf.reduce_mean(tf.reduce_sum(giou_loss, axis=[1,2,3,4]))
         conf_loss = tf.reduce_mean(tf.reduce_sum(conf_loss, axis=[1,2,3,4]))
         prob_loss = tf.reduce_mean(tf.reduce_sum(prob_loss, axis=[1,2,3,4]))
 
         return giou_loss, conf_loss, prob_loss
-
-
 
     def compute_loss(self, label_sbbox, label_mbbox, label_lbbox, true_sbbox, true_mbbox, true_lbbox):
 

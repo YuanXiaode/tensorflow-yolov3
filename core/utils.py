@@ -17,6 +17,7 @@ import colorsys
 import numpy as np
 import tensorflow as tf
 from core.config import cfg
+from pprint import pprint
 
 def read_class_names(class_file_name):
     '''loads class name from a file'''
@@ -101,10 +102,10 @@ def bboxes_iou(boxes1, boxes2):   #(num,4) (xl,yl,xr,yr)
     boxes1 = np.array(boxes1)
     boxes2 = np.array(boxes2)
 
-    boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * (boxes1[..., 3] - boxes1[..., 1])
-    boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * (boxes2[..., 3] - boxes2[..., 1])
+    boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * (boxes1[..., 3] - boxes1[..., 1])  ## shape:(1)
+    boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * (boxes2[..., 3] - boxes2[..., 1])  ## shape:(n,)
 
-    left_up       = np.maximum(boxes1[..., :2], boxes2[..., :2])
+    left_up       = np.maximum(boxes1[..., :2], boxes2[..., :2]) ## shape:(n,2)
     right_down    = np.minimum(boxes1[..., 2:], boxes2[..., 2:])
 
     inter_section = np.maximum(right_down - left_up, 0.0)
@@ -112,7 +113,7 @@ def bboxes_iou(boxes1, boxes2):   #(num,4) (xl,yl,xr,yr)
     union_area    = boxes1_area + boxes2_area - inter_area
     ious          = np.maximum(1.0 * inter_area / union_area, np.finfo(np.float32).eps)
 
-    return ious
+    return ious  ## shape:(n)
 
 
 
@@ -144,9 +145,9 @@ def nms(bboxes, iou_threshold, sigma=0.3, method='nms'):
 
         while len(cls_bboxes) > 0:
             max_ind = np.argmax(cls_bboxes[:, 4])
-            best_bbox = cls_bboxes[max_ind]
+            best_bbox = cls_bboxes[max_ind]  ## shape:(6)
             best_bboxes.append(best_bbox)
-            cls_bboxes = np.concatenate([cls_bboxes[: max_ind], cls_bboxes[max_ind + 1:]])## 除了conf 最高的框
+            cls_bboxes = np.concatenate([cls_bboxes[: max_ind], cls_bboxes[max_ind + 1:]])## 除了conf 最高的框  shape:(n,6)
             iou = bboxes_iou(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
             weight = np.ones((len(iou),), dtype=np.float32)
 
@@ -178,7 +179,7 @@ def postprocess_boxes(pred_bbox, org_img_shape, input_size, score_threshold):
     # # (1) (x, y, w, h) --> (xmin, ymin, xmax, ymax)
     pred_coor = np.concatenate([pred_xywh[:, :2] - pred_xywh[:, 2:] * 0.5,
                                 pred_xywh[:, :2] + pred_xywh[:, 2:] * 0.5], axis=-1)
-    # # (2) (xmin, ymin, xmax, ymax) -> (xmin_org, ymin_org, xmax_org, ymax_org)  ## 输入图下是经过resize和填充的，因此需要将算出的boxes缩放平移回原图
+    # # (2) (xmin, ymin, xmax, ymax) -> (xmin_org, ymin_org, xmax_org, ymax_org)  ## 输入图像是经过resize和填充的，因此需要将算出的boxes缩放平移回原图
     org_h, org_w = org_img_shape
     resize_ratio = min(input_size / org_w, input_size / org_h)
 
@@ -201,11 +202,11 @@ def postprocess_boxes(pred_bbox, org_img_shape, input_size, score_threshold):
     # # (5) discard some boxes with low scores
     classes = np.argmax(pred_prob, axis=-1)
     scores = pred_conf * pred_prob[np.arange(len(pred_coor)), classes]  ## 类别概率x置信度
-    score_mask = scores > score_threshold
+    score_mask = scores > score_threshold  ## score_threshold 0.3
     mask = np.logical_and(scale_mask, score_mask)
     coors, scores, classes = pred_coor[mask], scores[mask], classes[mask]
 
-    return np.concatenate([coors, coors[:, np.newaxis], classes[:, np.newaxis]], axis=-1)  ## coors 是比 coors 和 classes多一个维度
+    return np.concatenate([coors, scores[:, np.newaxis], classes[:, np.newaxis]], axis=-1)  ## coors 是比 coors 和 classes多一个维度
 
 
 
