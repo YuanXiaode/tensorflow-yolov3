@@ -16,7 +16,7 @@ import numpy as np
 import core.utils as utils
 import tensorflow as tf
 
-return_elements = ["input/input_data:0", "pred_sbbox/concat_2:0", "pred_mbbox/concat_2:0", "pred_lbbox/concat_2:0"]
+return_elements = ["input/input_data:0", "pred_sbbox/concat_2:0", "pred_mbbox/concat_2:0", "pred_lbbox/concat_2:0"]  ## 读取的张量名称，注意和保存的节点相对应
 pb_file         = "./yolov3_coco.pb"
 image_path      = "./docs/images/road.jpeg"
 num_classes     = 80
@@ -31,6 +31,10 @@ image_data = utils.image_preporcess(np.copy(original_image), [input_size, input_
 image_data = image_data[np.newaxis, ...]
 
 return_tensors = utils.read_pb_return_tensors(graph, pb_file, return_elements)
+
+tensor_name_list = [tensor.name for tensor in graph.as_graph_def().node]
+for tensor_name in tensor_name_list:
+    print(tensor_name)
 
 with tf.Session(graph=graph) as sess:
     pred_sbbox, pred_mbbox, pred_lbbox = sess.run(

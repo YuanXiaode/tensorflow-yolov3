@@ -52,7 +52,7 @@ def image_preporcess(image, target_size, gt_boxes=None):
     image_paded[dh:nh+dh, dw:nw+dw, :] = image_resized
     image_paded = image_paded / 255.
 
-    if gt_boxes is None:
+    if gt_boxes is None:   ## 推理时候没有boxes
         return image_paded
 
     else:
