@@ -38,13 +38,13 @@ class YOLOV3(object):
             raise NotImplementedError("Can not build up yolov3 network!")
 
         with tf.variable_scope('pred_sbbox'):
-            self.pred_sbbox = self.decode(self.conv_sbbox, self.anchors[0], self.strides[0])
+            self.pred_sbbox = self.decode(self.conv_sbbox, self.anchors[0], self.strides[0])  ## input_size / 8
 
         with tf.variable_scope('pred_mbbox'):
-            self.pred_mbbox = self.decode(self.conv_mbbox, self.anchors[1], self.strides[1])
+            self.pred_mbbox = self.decode(self.conv_mbbox, self.anchors[1], self.strides[1])  ## input_size / 16
 
         with tf.variable_scope('pred_lbbox'):
-            self.pred_lbbox = self.decode(self.conv_lbbox, self.anchors[2], self.strides[2])
+            self.pred_lbbox = self.decode(self.conv_lbbox, self.anchors[2], self.strides[2])  ## input_size / 32
 
     def __build_nework(self, input_data):
 

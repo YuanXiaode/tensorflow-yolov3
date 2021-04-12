@@ -19,8 +19,6 @@ import tensorflow as tf
 import core.utils as utils
 from core.config import cfg
 
-
-
 class Dataset(object):
     """implement Dataset here"""
     def __init__(self, dataset_type):
@@ -56,7 +54,7 @@ class Dataset(object):
     def __next__(self):
 
         with tf.device('/cpu:0'):
-            self.train_input_size = random.choice(self.train_input_sizes)
+            self.train_input_size = random.choice(self.train_input_sizes) ## 多尺度训练，随机选择一个尺度
             self.train_output_sizes = self.train_input_size // self.strides
 
             batch_image = np.zeros((self.batch_size, self.train_input_size, self.train_input_size, 3))
@@ -68,7 +66,7 @@ class Dataset(object):
             batch_label_lbbox = np.zeros((self.batch_size, self.train_output_sizes[2], self.train_output_sizes[2],
                                           self.anchor_per_scale, 5 + self.num_classes))
 
-            batch_sbboxes = np.zeros((self.batch_size, self.max_bbox_per_scale, 4))
+            batch_sbboxes = np.zeros((self.batch_size, self.max_bbox_per_scale, 4))  ## max_bbox_per_scale = 150
             batch_mbboxes = np.zeros((self.batch_size, self.max_bbox_per_scale, 4))
             batch_lbboxes = np.zeros((self.batch_size, self.max_bbox_per_scale, 4))
 
@@ -110,6 +108,7 @@ class Dataset(object):
 
         if random.random() < 0.5:
             h, w, _ = image.shape
+            ## 能包住所有标注框的最小框
             max_bbox = np.concatenate([np.min(bboxes[:, 0:2], axis=0), np.max(bboxes[:, 2:4], axis=0)], axis=-1)
 
             max_l_trans = max_bbox[0]
@@ -117,6 +116,7 @@ class Dataset(object):
             max_r_trans = w - max_bbox[2]
             max_d_trans = h - max_bbox[3]
 
+            ## 保证截取的区域在max_bbox之外，这样不会影响标注框
             crop_xmin = max(0, int(max_bbox[0] - random.uniform(0, max_l_trans)))
             crop_ymin = max(0, int(max_bbox[1] - random.uniform(0, max_u_trans)))
             crop_xmax = max(w, int(max_bbox[2] + random.uniform(0, max_r_trans)))
@@ -151,6 +151,7 @@ class Dataset(object):
 
         return image, bboxes
 
+    ## 解析标注，一条标注格式如下：['image_path 263,211,324,339,8 165,264,253,372,8 241,194,295,299,8\n']  x1,y1,x2,y2,class id
     def parse_annotation(self, annotation):
 
         line = annotation.split()
@@ -158,9 +159,10 @@ class Dataset(object):
         if not os.path.exists(image_path):
             raise KeyError("%s does not exist ... " %image_path)
         image = np.array(cv2.imread(image_path))
+        ## or: bboxes = np.array([[int(float(x)) for x in box.split(",")] for box in line[1:]])  shape = (n,5),n is the num of box in this line
         bboxes = np.array([list(map(lambda x: int(float(x)), box.split(','))) for box in line[1:]])
 
-        if self.data_aug:
+        if self.data_aug:  ## 图像预处理需要同时处理image和bboxes
             image, bboxes = self.random_horizontal_flip(np.copy(image), np.copy(bboxes))
             image, bboxes = self.random_crop(np.copy(image), np.copy(bboxes))
             image, bboxes = self.random_translate(np.copy(image), np.copy(bboxes))

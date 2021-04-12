@@ -81,6 +81,8 @@ class YoloTrain(object):
         with tf.name_scope("define_weight_decay"):
             moving_ave = tf.train.ExponentialMovingAverage(self.moving_ave_decay).apply(tf.trainable_variables())
 
+        # train_op_with_frozen_variables:只训练最后一个卷积层
+        # train_op_with_all_variables:   训练所有参数
         with tf.name_scope("define_first_stage_train"):
             self.first_stage_trainable_var_list = []
             for var in tf.trainable_variables():
@@ -118,7 +120,7 @@ class YoloTrain(object):
             tf.summary.scalar("total_loss", self.loss)
 
             logdir = "./data/log/"
-            if os.path.exists(logdir): shutil.rmtree(logdir)
+            if os.path.exists(logdir): shutil.rmtree(logdir)  ## rmtree 递归删除路径下所有文件
             os.mkdir(logdir)
             self.write_op = tf.summary.merge_all()
             self.summary_writer  = tf.summary.FileWriter(logdir, graph=self.sess.graph)
