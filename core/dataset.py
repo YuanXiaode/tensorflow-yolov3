@@ -240,7 +240,7 @@ class Dataset(object):
 
                 ## anchors_xywh 表示以真实框中点为中心，anchors 中给定的长宽形成的框，shape:(3,4),一个尺度对应三个框
                 anchors_xywh = np.zeros((self.anchor_per_scale, 4))
-                anchors_xywh[:, 0:2] = np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32) + 0.5
+                anchors_xywh[:, 0:2] = np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32) + 0.5  ## np.floor向下取整
                 anchors_xywh[:, 2:4] = self.anchors[i]
 
                 ## anchors_xywh 和 真实box差别太大的框不要
@@ -250,7 +250,7 @@ class Dataset(object):
 
                 if np.any(iou_mask):
                     xind, yind = np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32)
-                    xind = np.clip(xind, 0, self.train_output_sizes[i] - 1)     
+                    xind = np.clip(xind, 0, self.train_output_sizes[i] - 1)      ## 较少数据敏感性  train_output_sizes[i] 13 26 52
                     yind = np.clip(yind, 0, self.train_output_sizes[i] - 1)     
                     # This will mitigate errors generated when the location computed by this is more the grid cell location. 
                     # e.g. For 52x52 grid cells possible values of xind and yind are in range [0-51] including both. 
