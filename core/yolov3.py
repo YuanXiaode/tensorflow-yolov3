@@ -61,6 +61,7 @@ class YOLOV3(object):
                                           trainable=self.trainable, name='conv_lbbox', activate=False, bn=False)
 
         input_data = common.convolutional(input_data, (1, 1,  512,  256), self.trainable, 'conv57')
+        ## 这里用的最邻近上采样，不需要学习，减少计算参数
         input_data = common.upsample(input_data, name='upsample0', method=self.upsample_method)
 
         with tf.variable_scope('route_1'):

@@ -25,7 +25,7 @@ with tf.name_scope('input'):
 model = YOLOV3(input_data, trainable=False)
 print(model.conv_sbbox, model.conv_mbbox, model.conv_lbbox)
 
-tensor_name_list = [tensor.name for tensor in tf.get_default_graph().as_graph_def().node]
+tensor_name_list = [tensor.name for tensor in tf.get_default_graph().get_operations()]
 for name in tensor_name_list:
     print(name)
 

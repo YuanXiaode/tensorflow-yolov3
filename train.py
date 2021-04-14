@@ -11,6 +11,7 @@
 #
 #================================================================
 
+## 代码解析：zhuanlan.zhihu.com/p/101007030
 import os
 import time
 import shutil
