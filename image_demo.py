@@ -22,7 +22,7 @@ image_path      = "./docs/images/road.jpeg"
 num_classes     = 80
 input_size      = 416
 graph           = tf.Graph()
-
+print(tf.test.is_gpu_available())
 original_image = cv2.imread(image_path)
 
 original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
