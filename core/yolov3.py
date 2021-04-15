@@ -221,6 +221,7 @@ class YOLOV3(object):
         bbox_loss_scale = 2.0 - 1.0 * label_xywh[:, :, :, :, 2:3] * label_xywh[:, :, :, :, 3:4] / (input_size ** 2)
         giou_loss = respond_bbox * bbox_loss_scale * (1- giou)
 
+        # shape:(batch,size,size,3,1,4)  (batch,1,1,1,150,4)    output shape:(batch,size,size,3,150)
         iou = self.bbox_iou(pred_xywh[:, :, :, :, np.newaxis, :], bboxes[:, np.newaxis, np.newaxis, np.newaxis, :, :])
         max_iou = tf.expand_dims(tf.reduce_max(iou, axis=-1), axis=-1)
 
