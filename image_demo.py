@@ -54,5 +54,7 @@ bboxes = utils.nms(bboxes, 0.45, method='nms')
 image = utils.draw_bbox(original_image, bboxes)
 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 cv2.imshow("result",image)
+
+
 cv2.waitKey(0)
 cv2.destroyAllWindows()
